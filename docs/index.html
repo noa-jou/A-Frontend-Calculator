@@ -106,6 +106,46 @@
             margin-top: 6px;
         }
 
+        .manual-tests {
+            margin-top: 14px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: #fffdf8;
+            padding: 12px 14px;
+        }
+
+        .manual-tests h2 {
+            margin: 0 0 8px;
+            font-size: 1.02rem;
+            color: var(--ink);
+        }
+
+        .manual-tests p {
+            margin: 0 0 8px;
+            color: var(--muted);
+        }
+
+        .manual-tests ul {
+            margin: 0;
+            padding-left: 20px;
+            color: var(--muted);
+            line-height: 1.45;
+        }
+
+        .manual-tests li+li {
+            margin-top: 6px;
+        }
+
+        .manual-tests code {
+            background: #f2f4f7;
+            border: 1px solid #e4e7ec;
+            border-radius: 6px;
+            padding: 1px 5px;
+            color: #0f172a;
+            font-family: "Consolas", "Courier New", monospace;
+            font-size: 0.95em;
+        }
+
         .note {
             margin-top: 16px;
             font-size: 0.92rem;
@@ -131,6 +171,21 @@
                 <li>Keyboard input support: Enter, Backspace, Escape, and C</li>
                 <li>A visual test page that shows pass/fail step by step</li>
                 <li>Clear explanations of what each test checks and why it matters</li>
+            </ul>
+        </section>
+
+        <section class="manual-tests" aria-label="What to test manually">
+            <h2>What to test manually</h2>
+            <p>Try these quick checks directly on the calculator page:</p>
+            <ul>
+                <li>Basic operations: test <code>2+2</code>, <code>5-3</code>, <code>8/2</code>, then press <code>=</code> and verify correct answers.</li>
+                <li>Order of operations: try <code>2+3*4</code> and confirm the result is <code>14</code>.</li>
+                <li>Parentheses behavior: compare <code>(2+3)*4</code> with <code>2+(3*4)</code> and confirm they produce different correct results.</li>
+                <li>Negative numbers: test <code>-5+3</code> and <code>2--3</code> to confirm unary and double-minus logic.</li>
+                <li>Decimal precision: run <code>0.1+0.2</code>, <code>5.5/2</code>, and <code>(0.1+0.2)*10</code>.</li>
+                <li>Multiplication input equivalence: enter <code>2x3</code>, <code>2X3</code>, and <code>2*3</code>; all three should return <code>6</code>.</li>
+                <li>Keyboard controls: use <code>Enter</code> to calculate, <code>Backspace</code> to delete one character, and <code>Escape</code> or <code>C</code> to clear.</li>
+                <li>Error handling: try <code>1/0</code> and an invalid expression like <code>2+)</code> to check clear validation/error feedback.</li>
             </ul>
         </section>
 

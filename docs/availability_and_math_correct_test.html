@@ -244,7 +244,6 @@
             <div class="panel-head">
                 <div>
                     <h1>Calculator Comprehensive Test Suite</h1>
-                    <div class="small">Tests based on Project Review 2026-10 identified weaknesses</div>
                 </div>
                 <div class="head-actions">
                     <button id="runBtn" type="button">Run Tests Again</button>
@@ -469,6 +468,27 @@
                 return {
                     what: 'We enter impossible math (like divide by zero) and confirm the calculator responds safely.',
                     why: 'A safe error message is better than showing confusing results like Infinity or broken output.'
+                };
+            }
+
+            if (category === 'Security and Safety') {
+                return {
+                    what: 'We try potentially unsafe or unusual input patterns and confirm they are handled safely.',
+                    why: 'Frontend calculators should not execute injected content or break when users type unexpected values.'
+                };
+            }
+
+            if (category === 'Engine Behavior') {
+                return {
+                    what: 'We test core helper and parser behavior directly, including symbol normalization and formatting.',
+                    why: 'These checks protect internal logic from regressions even when UI interactions still look normal.'
+                };
+            }
+
+            if (category === 'Fuzz and Invariants') {
+                return {
+                    what: 'We run deterministic random samples and math-invariant checks to stress the parser and evaluator.',
+                    why: 'Invariant-based tests catch subtle bugs that fixed single examples may miss.'
                 };
             }
 
@@ -1042,6 +1062,564 @@
             return results;
         }
 
+        function runSecuritySafetyTests() {
+            var results = [];
+
+            function pushResult(name, pass, details, what, why) {
+                results.push({
+                    category: 'Security and Safety',
+                    name: name,
+                    pass: pass,
+                    details: details,
+                    what: what,
+                    why: why
+                });
+            }
+
+            try {
+                var ctx = getCalcContext();
+                var doc = ctx.doc;
+                var output = doc.getElementById('input');
+
+                // 1) Ensure display uses textContent, not HTML execution.
+                clearDisplay(ctx);
+                resetCapturedAlerts(ctx);
+                var htmlPayload = '<img src=x onerror=alert(1)>';
+                ctx.win.inputText(htmlPayload);
+                var hasInjectedImage = !!output.querySelector('img');
+                var passHtmlEscaping = !hasInjectedImage && output.textContent === htmlPayload;
+                pushResult(
+                    'Display treats HTML as text',
+                    passHtmlEscaping,
+                    passHtmlEscaping
+                        ? 'Payload remained plain text; no DOM injection occurred.'
+                        : 'HTML-like payload affected the DOM unexpectedly.',
+                    'Inserted an HTML-looking string through the same input helper used by the app.',
+                    'Using text-only output prevents script/HTML injection via expression text.'
+                );
+
+                // 2) Verify keydown handling does not interfere with active input fields.
+                clearDisplay(ctx);
+                var tempInput = doc.createElement('input');
+                doc.body.appendChild(tempInput);
+                tempInput.value = '';
+                tempInput.dispatchEvent(new ctx.win.KeyboardEvent('keydown', {
+                    key: '7',
+                    bubbles: true,
+                    cancelable: true
+                }));
+                var passInputFieldIgnore = getDisplayText(doc) === '';
+                tempInput.remove();
+                pushResult(
+                    'Keyboard handler ignores typed input fields',
+                    passInputFieldIgnore,
+                    passInputFieldIgnore
+                        ? 'Pressing 7 on an input field did not modify calculator display.'
+                        : 'Calculator display changed while typing inside an input field.',
+                    'Dispatched keyboard input from a temporary <input> element.',
+                    'Users editing form fields should not accidentally trigger calculator shortcuts.'
+                );
+
+                // 3) Verify contentEditable also bypasses calculator keyboard shortcuts.
+                clearDisplay(ctx);
+                var editable = doc.createElement('div');
+                editable.contentEditable = 'true';
+                doc.body.appendChild(editable);
+                editable.dispatchEvent(new ctx.win.KeyboardEvent('keydown', {
+                    key: '8',
+                    bubbles: true,
+                    cancelable: true
+                }));
+                var passEditableIgnore = getDisplayText(doc) === '';
+                editable.remove();
+                pushResult(
+                    'Keyboard handler ignores contenteditable areas',
+                    passEditableIgnore,
+                    passEditableIgnore
+                        ? 'Pressing 8 in contenteditable area did not affect calculator display.'
+                        : 'Calculator display changed while typing in contenteditable area.',
+                    'Dispatched keyboard input from a temporary contenteditable region.',
+                    'Content editing areas should keep normal typing behavior without calculator interference.'
+                );
+
+                // 4) Confirm invalid character expressions fail safely.
+                resetCapturedAlerts(ctx);
+                output.textContent = '2+alert(1)';
+                ctx.win.calculate();
+                var invalidAlerts = takeCapturedAlerts(ctx);
+                var passInvalidChars = invalidAlerts.length > 0 && output.textContent === '2+alert(1)';
+                pushResult(
+                    'Invalid character expression is rejected safely',
+                    passInvalidChars,
+                    passInvalidChars
+                        ? 'Expression was rejected with alert and original text stayed visible.'
+                        : 'Invalid character expression was not handled safely.',
+                    'Ran calculate() on expression containing unsupported letters and function-like text.',
+                    'Invalid input must fail predictably instead of partially evaluating or mutating state unpredictably.'
+                );
+
+                // 5) Confirm divide-by-zero preserves user expression text after alert.
+                resetCapturedAlerts(ctx);
+                output.textContent = '1/0';
+                ctx.win.calculate();
+                var zeroAlerts = takeCapturedAlerts(ctx);
+                var passKeepExpression = zeroAlerts.length > 0 && output.textContent === '1/0';
+                pushResult(
+                    'Error does not erase user expression',
+                    passKeepExpression,
+                    passKeepExpression
+                        ? 'After divide-by-zero, expression remained for user correction.'
+                        : 'Expression changed unexpectedly after divide-by-zero error.',
+                    'Triggered divide-by-zero and checked display content after alert handling.',
+                    'Keeping the original text helps users quickly correct mistakes.'
+                );
+
+                // 6) Lightweight static check that core functions do not use eval/new Function.
+                var sourceText = [
+                    ctx.win.evaluateExpression,
+                    ctx.win.calculate,
+                    ctx.win.tokenizeExpression
+                ].map(function (fn) {
+                    return typeof fn === 'function' ? fn.toString() : '';
+                }).join('\n');
+                var passNoEval = !/\beval\s*\(/.test(sourceText) && !/\bFunction\s*\(/.test(sourceText);
+                pushResult(
+                    'Core engine avoids eval/new Function',
+                    passNoEval,
+                    passNoEval
+                        ? 'No eval/new Function detected in key calculation functions.'
+                        : 'Found eval/new Function usage in key calculation functions.',
+                    'Inspected function source text for dynamic code execution patterns.',
+                    'Avoiding dynamic execution is safer and easier to reason about.'
+                );
+            } catch (error) {
+                results.push({
+                    category: 'Security and Safety',
+                    name: 'Security test runner setup',
+                    pass: false,
+                    details: error.message
+                });
+            }
+
+            return results;
+        }
+
+        function runEngineBehaviorTests() {
+            var results = [];
+
+            function pushResult(name, pass, details, what, why) {
+                results.push({
+                    category: 'Engine Behavior',
+                    name: name,
+                    pass: pass,
+                    details: details,
+                    what: what,
+                    why: why
+                });
+            }
+
+            try {
+                var ctx = getCalcContext();
+                var doc = ctx.doc;
+
+                var valueX = ctx.win.evaluateExpression('2x3');
+                pushResult(
+                    'x multiplication symbol evaluates correctly',
+                    valueX === 6,
+                    valueX === 6 ? '2x3 = 6' : 'Expected 6, got ' + valueX,
+                    'Called evaluateExpression with x as multiplication.',
+                    'The UI now displays x, so the engine must support it directly.'
+                );
+
+                var valueTimesChar = ctx.win.evaluateExpression('2×3');
+                pushResult(
+                    'Unicode multiplication sign evaluates correctly',
+                    valueTimesChar === 6,
+                    valueTimesChar === 6 ? '2×3 = 6' : 'Expected 6, got ' + valueTimesChar,
+                    'Called evaluateExpression with the unicode times character.',
+                    'Users may paste expressions from other apps using × instead of *.'
+                );
+
+                var spacedValue = ctx.win.evaluateExpression(' ( 2 + 3 ) x 4 ');
+                pushResult(
+                    'Whitespace and x symbol normalize correctly',
+                    spacedValue === 20,
+                    spacedValue === 20 ? '( 2 + 3 ) x 4 = 20' : 'Expected 20, got ' + spacedValue,
+                    'Evaluated expression with extra spaces and x symbol.',
+                    'Robust parsers should handle common spacing differences.'
+                );
+
+                var formatted = ctx.win.formatResult(0.30000000000000004);
+                pushResult(
+                    'formatResult reduces common float display noise',
+                    formatted === '0.3',
+                    formatted === '0.3' ? '0.30000000000000004 formatted as 0.3' : 'Expected 0.3, got ' + formatted,
+                    'Formatted a classic floating-point artifact value.',
+                    'Readable output is important for user trust.'
+                );
+
+                clearDisplay(ctx);
+                ctx.win.deleteLastChar();
+                var safeBackspace = getDisplayText(doc) === '';
+                pushResult(
+                    'deleteLastChar is safe on empty display',
+                    safeBackspace,
+                    safeBackspace ? 'Empty display remained stable.' : 'Display changed unexpectedly on empty backspace.',
+                    'Called deleteLastChar with no expression content.',
+                    'Defensive behavior avoids edge-case crashes.'
+                );
+
+                var verifyImplicitMultiply = ctx.win.verify('2(3+4)') === false;
+                pushResult(
+                    'verify blocks implicit multiplication form',
+                    verifyImplicitMultiply,
+                    verifyImplicitMultiply ? '2(3+4) correctly rejected.' : '2(3+4) was unexpectedly accepted.',
+                    'Checked validation for missing operator before parentheses.',
+                    'The current grammar requires explicit operators for predictable parsing.'
+                );
+
+                var terms = 150;
+                var longExpr = Array(terms).fill('1').join('+');
+                var longValue = ctx.win.evaluateExpression(longExpr);
+                pushResult(
+                    'Long addition chain evaluates correctly',
+                    longValue === terms,
+                    longValue === terms ? 'Long chain result = ' + longValue : 'Expected ' + terms + ', got ' + longValue,
+                    'Evaluated a long but valid expression to stress parser/evaluator flow.',
+                    'Long-input stability helps prevent hidden edge-case failures.'
+                );
+            } catch (error) {
+                results.push({
+                    category: 'Engine Behavior',
+                    name: 'Engine behavior test runner setup',
+                    pass: false,
+                    details: error.message
+                });
+            }
+
+            return results;
+        }
+
+        function runFuzzInvariantTests() {
+            var results = [];
+
+            function pushResult(name, pass, details, what, why) {
+                results.push({
+                    category: 'Fuzz and Invariants',
+                    name: name,
+                    pass: pass,
+                    details: details,
+                    what: what,
+                    why: why
+                });
+            }
+
+            function createSeededRandom(seed) {
+                var state = seed >>> 0;
+                return function () {
+                    state = (1664525 * state + 1013904223) >>> 0;
+                    return state / 4294967296;
+                };
+            }
+
+            function randomInt(rand, min, max) {
+                return Math.floor(rand() * (max - min + 1)) + min;
+            }
+
+            function randomNumberToken(rand, allowSigned) {
+                var whole = randomInt(rand, 1, 9);
+                var text = String(whole);
+
+                if (rand() < 0.35) {
+                    text = text + '.' + randomInt(rand, 1, 9);
+                }
+
+                if (allowSigned && rand() < 0.3) {
+                    text = '-' + text;
+                }
+
+                return text;
+            }
+
+            function generateExpression(rand, operatorCount) {
+                var operators = ['+', '-', '*', '/'];
+                var expression = randomNumberToken(rand, true);
+
+                for (var i = 0; i < operatorCount; i++) {
+                    var op = operators[randomInt(rand, 0, operators.length - 1)];
+                    var right = randomNumberToken(rand, false);
+                    expression = expression + op + right;
+
+                    if (rand() < 0.22) {
+                        expression = '(' + expression + ')';
+                    }
+                }
+
+                return expression;
+            }
+
+            function referenceEvaluate(ctx, expression) {
+                var compact = ctx.win.normalizeExpressionSymbols(expression).replace(/\s+/g, '');
+
+                if (!/^[0-9+\-*/().]+$/.test(compact)) {
+                    throw new Error('Unsafe reference expression: ' + expression);
+                }
+
+                var value = Function('"use strict"; return (' + compact + ');')();
+                if (typeof value !== 'number' || !isFinite(value)) {
+                    throw new Error('Reference value not finite');
+                }
+
+                return value;
+            }
+
+            function decorateWithAltSymbols(expression, rand) {
+                var withMultiplySymbols = expression.replace(/\*/g, function () {
+                    return rand() < 0.5 ? 'x' : '×';
+                });
+
+                var decorated = '';
+                for (var i = 0; i < withMultiplySymbols.length; i++) {
+                    var ch = withMultiplySymbols[i];
+                    if ('+-/()x×'.indexOf(ch) !== -1 && rand() < 0.4) {
+                        decorated += ' ' + ch + ' ';
+                    } else {
+                        decorated += ch;
+                    }
+                }
+
+                return '  ' + decorated + '  ';
+            }
+
+            try {
+                var ctx = getCalcContext();
+                var sampleRand = createSeededRandom(20261005);
+                var sampleCount = 18;
+                var samples = [];
+
+                for (var i = 0; i < sampleCount; i++) {
+                    samples.push(generateExpression(sampleRand, randomInt(sampleRand, 2, 6)));
+                }
+
+                var mismatchCount = 0;
+                var firstMismatch = null;
+                for (var j = 0; j < samples.length; j++) {
+                    var sampleExpr = samples[j];
+                    var engineValue = ctx.win.evaluateExpression(sampleExpr);
+                    var referenceValue = referenceEvaluate(ctx, sampleExpr);
+
+                    if (!floatEqual(engineValue, referenceValue, 1e-9)) {
+                        mismatchCount++;
+                        if (!firstMismatch) {
+                            firstMismatch = {
+                                expr: sampleExpr,
+                                engineValue: engineValue,
+                                referenceValue: referenceValue
+                            };
+                        }
+                    }
+                }
+
+                var passReferenceMatch = mismatchCount === 0;
+                pushResult(
+                    'Deterministic fuzz samples match reference evaluator',
+                    passReferenceMatch,
+                    passReferenceMatch
+                        ? sampleCount + ' random expressions matched a sanitized JS reference evaluator.'
+                        : ('Mismatch on "' + firstMismatch.expr + '": engine=' + firstMismatch.engineValue + ', reference=' + firstMismatch.referenceValue),
+                    'Generated fixed-seed expressions and compared the calculator result with an independently evaluated reference value.',
+                    'Cross-checking many expressions quickly catches parser or precedence regressions.'
+                );
+
+                var altRand = createSeededRandom(20261006);
+                var altMismatchCount = 0;
+                var firstAltMismatch = null;
+                for (var k = 0; k < samples.length; k++) {
+                    var originalExpr = samples[k];
+                    var mixedExpr = decorateWithAltSymbols(originalExpr, altRand);
+                    var baseValue = ctx.win.evaluateExpression(originalExpr);
+                    var mixedValue = ctx.win.evaluateExpression(mixedExpr);
+
+                    if (!floatEqual(baseValue, mixedValue, 1e-9)) {
+                        altMismatchCount++;
+                        if (!firstAltMismatch) {
+                            firstAltMismatch = {
+                                originalExpr: originalExpr,
+                                mixedExpr: mixedExpr,
+                                baseValue: baseValue,
+                                mixedValue: mixedValue
+                            };
+                        }
+                    }
+                }
+
+                var passAltSymbols = altMismatchCount === 0;
+                pushResult(
+                    'x/*/× and whitespace normalization stay equivalent',
+                    passAltSymbols,
+                    passAltSymbols
+                        ? sampleCount + ' mixed-symbol variants produced the same values as their base expressions.'
+                        : ('Normalization mismatch: "' + firstAltMismatch.originalExpr + '" vs "' + firstAltMismatch.mixedExpr + '"'),
+                    'Converted random expressions to mixed multiplication symbols (x and ×) and random spacing, then re-evaluated.',
+                    'People paste expressions from many sources, so equivalent symbols should behave the same.'
+                );
+
+                var identityMismatchCount = 0;
+                var firstIdentityMismatch = null;
+                for (var m = 0; m < samples.length; m++) {
+                    var identityExpr = samples[m];
+                    var base = ctx.win.evaluateExpression(identityExpr);
+                    var wrapped = ctx.win.evaluateExpression('(' + identityExpr + ')');
+                    var plusZero = ctx.win.evaluateExpression('(' + identityExpr + ')+0');
+                    var timesOne = ctx.win.evaluateExpression('(' + identityExpr + ')*1');
+
+                    var same = floatEqual(base, wrapped, 1e-9)
+                        && floatEqual(base, plusZero, 1e-9)
+                        && floatEqual(base, timesOne, 1e-9);
+
+                    if (!same) {
+                        identityMismatchCount++;
+                        if (!firstIdentityMismatch) {
+                            firstIdentityMismatch = {
+                                expr: identityExpr,
+                                base: base,
+                                wrapped: wrapped,
+                                plusZero: plusZero,
+                                timesOne: timesOne
+                            };
+                        }
+                    }
+                }
+
+                var passIdentity = identityMismatchCount === 0;
+                pushResult(
+                    'Core math invariants hold on random samples',
+                    passIdentity,
+                    passIdentity
+                        ? 'Parentheses wrapping, +0, and *1 invariants held across all random samples.'
+                        : ('Invariant mismatch on "' + firstIdentityMismatch.expr + '"'),
+                    'Checked that E, (E), (E)+0, and (E)*1 all evaluate to the same value.',
+                    'Invariant checks detect subtle state/precedence bugs even when ordinary examples still pass.'
+                );
+
+                var commRand = createSeededRandom(20261007);
+                var pairCount = 12;
+                var commFailCount = 0;
+                var firstCommMismatch = null;
+
+                for (var n = 0; n < pairCount; n++) {
+                    var a = randomNumberToken(commRand, true);
+                    var b = randomNumberToken(commRand, true);
+                    var addAB = ctx.win.evaluateExpression(a + '+' + b);
+                    var addBA = ctx.win.evaluateExpression(b + '+' + a);
+                    var mulAB = ctx.win.evaluateExpression(a + '*' + b);
+                    var mulBA = ctx.win.evaluateExpression(b + '*' + a);
+
+                    var passPair = floatEqual(addAB, addBA, 1e-9) && floatEqual(mulAB, mulBA, 1e-9);
+                    if (!passPair) {
+                        commFailCount++;
+                        if (!firstCommMismatch) {
+                            firstCommMismatch = {
+                                a: a,
+                                b: b,
+                                addAB: addAB,
+                                addBA: addBA,
+                                mulAB: mulAB,
+                                mulBA: mulBA
+                            };
+                        }
+                    }
+                }
+
+                var passCommutativity = commFailCount === 0;
+                pushResult(
+                    'Addition and multiplication commutativity spot-check',
+                    passCommutativity,
+                    passCommutativity
+                        ? pairCount + ' random pairs satisfied a+b=b+a and a*b=b*a.'
+                        : ('Commutativity mismatch for a=' + firstCommMismatch.a + ', b=' + firstCommMismatch.b),
+                    'Evaluated both operand orders for random numeric pairs.',
+                    'Order-independent operations should remain stable regardless of input sequence.'
+                );
+
+                var repeatFailCount = 0;
+                var firstRepeatMismatch = null;
+                for (var p = 0; p < Math.min(10, samples.length); p++) {
+                    var repeatExpr = samples[p];
+                    var r1 = ctx.win.evaluateExpression(repeatExpr);
+                    var r2 = ctx.win.evaluateExpression(repeatExpr);
+                    var r3 = ctx.win.evaluateExpression(repeatExpr);
+                    var repeatOk = floatEqual(r1, r2, 1e-12) && floatEqual(r2, r3, 1e-12);
+
+                    if (!repeatOk) {
+                        repeatFailCount++;
+                        if (!firstRepeatMismatch) {
+                            firstRepeatMismatch = {
+                                expr: repeatExpr,
+                                r1: r1,
+                                r2: r2,
+                                r3: r3
+                            };
+                        }
+                    }
+                }
+
+                var passRepeatability = repeatFailCount === 0;
+                pushResult(
+                    'Repeat evaluation is deterministic',
+                    passRepeatability,
+                    passRepeatability
+                        ? 'Repeated runs produced consistent values for sampled expressions.'
+                        : ('Repeat mismatch on "' + firstRepeatMismatch.expr + '": ' + firstRepeatMismatch.r1 + ', ' + firstRepeatMismatch.r2 + ', ' + firstRepeatMismatch.r3),
+                    'Re-evaluated the same expression multiple times in a row.',
+                    'Deterministic output is important for trust and debuggability.'
+                );
+
+                var copyPasteCases = [
+                    '2\u00F73',
+                    '4\u22122',
+                    '1\uFF0B2',
+                    '3,14+2',
+                    '9\u20444'
+                ];
+                var badPasteAccepted = [];
+
+                for (var q = 0; q < copyPasteCases.length; q++) {
+                    var pastedExpr = copyPasteCases[q];
+                    var verifyResult = ctx.win.verify(pastedExpr);
+
+                    resetCapturedAlerts(ctx);
+                    ctx.doc.getElementById('input').textContent = pastedExpr;
+                    ctx.win.calculate();
+                    var alertCount = takeCapturedAlerts(ctx).length;
+
+                    if (verifyResult !== false || alertCount === 0) {
+                        badPasteAccepted.push(pastedExpr);
+                    }
+                }
+
+                var passCopyPasteGuard = badPasteAccepted.length === 0;
+                pushResult(
+                    'Unsafe copy/paste symbols are rejected safely',
+                    passCopyPasteGuard,
+                    passCopyPasteGuard
+                        ? 'Unicode look-alike operators and comma decimals were rejected with validation alerts.'
+                        : 'Unexpectedly accepted: ' + badPasteAccepted.join(', '),
+                    'Tried expressions with unicode operator look-alikes and locale-specific punctuation.',
+                    'Copy/paste input from chats or documents should fail safely when unsupported.'
+                );
+            } catch (error) {
+                results.push({
+                    category: 'Fuzz and Invariants',
+                    name: 'Fuzz test runner setup',
+                    pass: false,
+                    details: error.message
+                });
+            }
+
+            return results;
+        }
+
         function runHTMLStructureTests() {
             var results = [];
             var ctx = getCalcContext();
@@ -1157,6 +1735,9 @@
                 { label: 'Decimal precision checks', runner: runDecimalTests },
                 { label: 'Floating-point edge checks', runner: runFloatPrecisionTests },
                 { label: 'Error handling checks', runner: runErrorHandlingTests },
+                { label: 'Security and safety checks', runner: runSecuritySafetyTests },
+                { label: 'Engine behavior checks', runner: runEngineBehaviorTests },
+                { label: 'Fuzz and invariant checks', runner: runFuzzInvariantTests },
                 { label: 'Input validation checks', runner: runInputValidationTests },
                 { label: 'Keyboard checks', runner: runKeyboardTests }
             ];
