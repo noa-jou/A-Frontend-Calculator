@@ -12,8 +12,8 @@
             --ink: #1d2a3a;
             --muted: #5a6777;
             --line: #d8e1ee;
-            --primary: #0f766e;
-            --primary-2: #0b5f59;
+            --primary: #55760f;
+            --primary-2: #0b3f5f;
         }
 
         * {
@@ -59,6 +59,15 @@
             margin-top: 18px;
             display: grid;
             gap: 10px;
+        }
+
+        .primary-links {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .primary-links .link-btn {
+            width: 100%;
+            text-align: center;
         }
 
         .link-btn {
@@ -158,7 +167,7 @@
         <h1>A "Boring but Functional" Frontend Calculator</h1>
         <p>This project has two main pages. Pick where you want to go:</p>
 
-        <div class="links">
+        <div class="links primary-links">
             <a class="link-btn" href="./calculator.html">Open Calculator</a>
             <a class="link-btn" href="./availability_and_math_correct_test.html">Open Test Dashboard</a>
         </div>
