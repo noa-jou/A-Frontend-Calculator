@@ -1,49 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Calculator</title>
     <link rel="stylesheet" href="./style.css" />
 </head>
-<body>
-    <table>
-        <tbody>
-            <tr>
-                <td colspan="3" class="screen">
-                    <label id="input"></label>
-                </td>
-                <td>
-                    <button onclick="clearText();">C</button>
-                </td>
-                <td>
-                    <button onclick="calculate();">=</button>
-                </td>
-            </tr>
-            <tr>
-                <td><button onclick="inputText('1');">1</button></td>
-                <td><button onclick="inputText('2');">2</button></td>
-                <td><button onclick="inputText('3');">3</button></td>
-                <td><button onclick="inputText('+');">+</button></td>
-                <td><button onclick="inputText('-');">-</button></td>
-            </tr>
-            <tr>
-                <td><button onclick="inputText('4');">4</button></td>
-                <td><button onclick="inputText('5');">5</button></td>
-                <td><button onclick="inputText('6');">6</button></td>
-                <td><button onclick="inputText('*');">*</button></td>
-                <td><button onclick="inputText('/');">/</button></td>
-            </tr>
-            <tr>
-                <td><button onclick="inputText('7');">7</button></td>
-                <td><button onclick="inputText('8');">8</button></td>
-                <td><button onclick="inputText('9');">9</button></td>
-                <td><button onclick="inputText('0');">0</button></td>
-                <td><button onclick="inputText('.');">.</button></td>
-            </tr>
-        </tbody>
-    </table>
 
+<body>
+    <div class="calculator-wrapper">
+        <table class="calculator">
+            <tbody>
+                <tr>
+                    <td colspan="5" class="screen">
+                        <output id="input" aria-label="Calculation result" aria-live="polite"></output>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2"><button onclick="inputText('0');" aria-label="Number zero">0</button></td>
+                    <td><button class="btn-control" onclick="clearText();" aria-label="Clear display">C</button></td>
+                    <td><button class="btn-dot" onclick="inputText('.');" aria-label="Decimal point">.</button></td>
+                    <td><button class="btn-equals" onclick="calculate();" aria-label="Calculate result">=</button></td>
+                </tr>
+                <tr>
+                    <td><button onclick="inputText('1');" aria-label="Number one">1</button></td>
+                    <td><button onclick="inputText('2');" aria-label="Number two">2</button></td>
+                    <td><button onclick="inputText('3');" aria-label="Number three">3</button></td>
+                    <td><button class="btn-operator" onclick="inputText('+');" aria-label="Addition operator">+</button>
+                    </td>
+                    <td><button class="btn-operator" onclick="inputText('-');"
+                            aria-label="Subtraction operator">-</button></td>
+                </tr>
+                <tr>
+                    <td><button onclick="inputText('4');" aria-label="Number four">4</button></td>
+                    <td><button onclick="inputText('5');" aria-label="Number five">5</button></td>
+                    <td><button onclick="inputText('6');" aria-label="Number six">6</button></td>
+                    <td><button class="btn-multiply" onclick="inputText('*');"
+                            aria-label="Multiplication operator">*</button></td>
+                    <td><button class="btn-divide" onclick="inputText('/');" aria-label="Division operator">/</button>
+                    </td>
+
+                </tr>
+                <tr>
+                    <td><button onclick="inputText('7');" aria-label="Number seven">7</button></td>
+                    <td><button onclick="inputText('8');" aria-label="Number eight">8</button></td>
+                    <td><button onclick="inputText('9');" aria-label="Number nine">9</button></td>
+                    <td><button class="btn-parenthesis" onclick="inputText('(');"
+                            aria-label="Opening parenthesis">(</button>
+                    </td>
+                    <td><button class="btn-parenthesis" onclick="inputText(')');"
+                            aria-label="Closing parenthesis">)</button>
+                    </td>
+                </tr>
+                <tr>
+                </tr>
+            </tbody>
+        </table>
+    </div>
     <script src="./app.js"></script>
 </body>
+
 </html>

@@ -17,9 +17,24 @@ td {
 }
 
 button {
-	background-color: gray;
+	background-color: #b7e4ff;
 	font-size: large;
-	color: white;
+	color: #12324a;
 	height: 100%;
 	width: 100%;
+}
+
+.btn-operator,
+.btn-multiply,
+.btn-divide,
+.btn-parenthesis,
+.btn-equals,
+.btn-dot {
+	background-color: #bff0bf;
+	color: #164016;
+}
+
+.btn-control {
+	background-color: #f7b8d9;
+	color: #5c1938;
 }

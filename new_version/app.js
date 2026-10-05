@@ -59,7 +59,7 @@ function handleCalculatorKeydown(event) {
 	}
 
 	// Operator keys.
-	if (key === '+' || key === '-' || key === '*' || key === '/' || key === '.') {
+	if (key === '+' || key === '-' || key === '*' || key === '/' || key === '.' || key === '(' || key === ')') {
 		inputText(key);
 		event.preventDefault();
 		return;
@@ -105,24 +105,30 @@ function verify(ori) {
 		return false;
 	}
 
-	// Cannot start with . / * or multiple signs like -- at the beginning.
-	if (startWithSymbol(ori)) {
+	var compact = ori.replace(/\s+/g, '');
+	if (!compact) {
 		return false;
 	}
 
-	// Cannot end with an operator or dot.
-	if (endWithSymbol(ori)) {
+	// Keep legacy guardrails for malformed symbol runs.
+	if (startWithSymbol(compact)) {
+		return false;
+	}
+
+	// Cannot end with an operator, opening parenthesis, or dot.
+	if (endWithSymbol(compact)) {
 		return false;
 	}
 
 	// Block invalid repeated symbols like **, //, .., +++, ---.
-	if (continuousSymbol(ori)) {
+	if (continuousSymbol(compact)) {
 		return false;
 	}
 
-	// Each parsed number part must be a real number.
-	var num_arr = getPureNumAry(ori);
-	if (num_arr.length === 0 || !allNum(num_arr)) {
+	try {
+		var tokens = tokenizeExpression(compact);
+		validateTokens(tokens);
+	} catch (error) {
 		return false;
 	}
 
@@ -130,44 +136,45 @@ function verify(ori) {
 }
 
 function startWithSymbol(ori) {
-	var re = new RegExp('^[\\.|\\/|\\*]|^([+|-]){2,}');
+	var re = /^([./*]|[+\-]{2,})/;
 	return re.test(ori);
 }
 
 function endWithSymbol(ori) {
-	var re = new RegExp('[\\.|\\/|\\*|+|-]$');
+	var re = /[./*+\-(]$/;
 	return re.test(ori);
 }
 
 function continuousSymbol(ori) {
-	var re = new RegExp('([\\*|\\/|.]{2,})|([+|-]){3,}');
+	var re = /(\*\*|\/\/|\.\.|[+\-]{3,})/;
 	return re.test(ori);
 }
 
 function getPureNumAry(ori) {
-	var tmp = '';
-	var ary = [];
-
-	for (var i = 0; i < ori.length; i++) {
-		if (i === ori.length - 1) {
-			tmp += ori[i];
-			ary.push(tmp);
-		} else if (isNaN(ori[i]) && ori[i] !== '.') {
-			ary.push(tmp);
-			tmp = '';
-		} else {
-			tmp += ori[i];
-		}
+	var compact = String(ori || '').replace(/\s+/g, '');
+	if (!compact) {
+		return [];
 	}
 
-	return ary;
+	try {
+		var tokens = tokenizeExpression(compact);
+		var ary = [];
+
+		for (var i = 0; i < tokens.length; i++) {
+			if (tokens[i].type === 'number') {
+				ary.push(tokens[i].raw);
+			}
+		}
+
+		return ary;
+	} catch (error) {
+		return [];
+	}
 }
 
 function allNum(num_arr) {
 	for (var i = 0; i < num_arr.length; i++) {
-		// Empty fragments can appear around unary signs (example: 2*-3),
-		// so we only reject true non-number fragments.
-		if (isNaN(num_arr[i])) {
+		if (num_arr[i] === '' || isNaN(num_arr[i])) {
 			return false;
 		}
 	}
@@ -178,55 +185,186 @@ function allNum(num_arr) {
 // Expression parsing helpers
 // -------------------------------
 
-// Parse numbers and keep leading signs attached (for example: -3 in 2*-3).
-function getNumAry(ori) {
-	var tmp = '';
-	var ary = [];
-	var attach_sym = false;
-
-	for (var i = 0; i < ori.length; i++) {
-		if (i === 0 && isNaN(ori[i])) {
-			attach_sym = true;
-		} else if (ori.length > 2 && isNaN(ori[i - 1]) && isNaN(ori[i])) {
-			attach_sym = true;
-		} else {
-			attach_sym = false;
-		}
-
-		if (attach_sym || ori[i] === '.') {
-			tmp += ori[i];
-			continue;
-		}
-
-		if (i === ori.length - 1) {
-			tmp += ori[i];
-			ary.push(tmp);
-		} else if (isNaN(ori[i]) && !attach_sym) {
-			ary.push(tmp);
-			tmp = '';
-		} else if (!isNaN(ori[i])) {
-			tmp += ori[i];
-		}
-	}
-
-	return ary;
+function isDigitChar(ch) {
+	return ch >= '0' && ch <= '9';
 }
 
-// Parse operators only (+ - * /).
-function getSymAry(ori) {
-	var ary = [];
+// Tokenize into numbers and symbols: + - * / ( )
+function tokenizeExpression(expression) {
+	var tokens = [];
+	var i = 0;
 
-	for (var i = 0; i < ori.length; i++) {
-		if (i === 0) {
+	while (i < expression.length) {
+		var ch = expression[i];
+
+		if (isDigitChar(ch) || ch === '.') {
+			var numberText = '';
+			var hasDigit = false;
+			var hasDot = false;
+
+			while (i < expression.length) {
+				ch = expression[i];
+
+				if (isDigitChar(ch)) {
+					numberText += ch;
+					hasDigit = true;
+					i++;
+					continue;
+				}
+
+				if (ch === '.') {
+					if (hasDot) {
+						throw new Error('Invalid expression');
+					}
+
+					hasDot = true;
+					numberText += ch;
+					i++;
+					continue;
+				}
+
+				break;
+			}
+
+			if (!hasDigit) {
+				throw new Error('Invalid expression');
+			}
+
+			var parsedNumber = parseFloat(numberText);
+			if (isNaN(parsedNumber)) {
+				throw new Error('Invalid expression');
+			}
+
+			tokens.push({
+				type: 'number',
+				value: parsedNumber,
+				raw: numberText
+			});
+
 			continue;
-		} else if (ori.length > 2 && isNaN(ori[i - 1]) && isNaN(ori[i])) {
+		}
+
+		if (ch === '+' || ch === '-' || ch === '*' || ch === '/' || ch === '(' || ch === ')') {
+			tokens.push({
+				type: 'symbol',
+				value: ch
+			});
+			i++;
 			continue;
-		} else if (isNaN(ori[i]) && ori[i] !== '.') {
-			ary.push(ori[i]);
+		}
+
+		throw new Error('Invalid expression');
+	}
+
+	return tokens;
+}
+
+function isUnarySymbol(symbol) {
+	return symbol === '+' || symbol === '-';
+}
+
+function validateTokens(tokens) {
+	if (!tokens || tokens.length === 0) {
+		throw new Error('Invalid expression');
+	}
+
+	var balance = 0;
+	var expectValue = true;
+
+	for (var i = 0; i < tokens.length; i++) {
+		var token = tokens[i];
+
+		if (token.type === 'number') {
+			if (!expectValue) {
+				throw new Error('Invalid expression');
+			}
+
+			expectValue = false;
+			continue;
+		}
+
+		if (token.value === '(') {
+			if (!expectValue) {
+				throw new Error('Invalid expression');
+			}
+
+			balance++;
+			expectValue = true;
+			continue;
+		}
+
+		if (token.value === ')') {
+			if (expectValue) {
+				throw new Error('Invalid expression');
+			}
+
+			balance--;
+			if (balance < 0) {
+				throw new Error('Invalid expression');
+			}
+
+			expectValue = false;
+			continue;
+		}
+
+		if (expectValue) {
+			if (!isUnarySymbol(token.value)) {
+				throw new Error('Invalid expression');
+			}
+		} else {
+			expectValue = true;
 		}
 	}
 
-	return ary;
+	if (balance !== 0 || expectValue) {
+		throw new Error('Invalid expression');
+	}
+}
+
+// Extract numbers for compatibility with existing helper API.
+function getNumAry(ori) {
+	var compact = String(ori || '').replace(/\s+/g, '');
+	if (!compact) {
+		return [];
+	}
+
+	try {
+		var tokens = tokenizeExpression(compact);
+		var ary = [];
+
+		for (var i = 0; i < tokens.length; i++) {
+			if (tokens[i].type === 'number') {
+				ary.push(tokens[i].raw);
+			}
+		}
+
+		return ary;
+	} catch (error) {
+		return [];
+	}
+}
+
+// Extract binary operators only (+ - * /) for compatibility.
+function getSymAry(ori) {
+	var compact = String(ori || '').replace(/\s+/g, '');
+	if (!compact) {
+		return [];
+	}
+
+	try {
+		var tokens = tokenizeExpression(compact);
+		var ary = [];
+
+		for (var i = 0; i < tokens.length; i++) {
+			if (tokens[i].type === 'symbol' && tokens[i].value !== '(' && tokens[i].value !== ')') {
+				ary.push(tokens[i].value);
+			}
+		}
+
+		return ary;
+	} catch (error) {
+		return [];
+	}
 }
 
 // -------------------------------
@@ -238,68 +376,174 @@ function evaluateExpression(expression) {
 		throw new Error('Invalid expression');
 	}
 
-	var numTexts = getNumAry(expression);
-	var sym_arr = getSymAry(expression);
+	var compact = expression.replace(/\s+/g, '');
+	var tokens = tokenizeExpression(compact);
+	validateTokens(tokens);
 
-	var numbers = [];
-	for (var i = 0; i < numTexts.length; i++) {
-		numbers.push(parseFloat(numTexts[i]));
+	return evaluateTokens(tokens);
+}
+
+function getOperatorPrecedence(operator) {
+	if (operator === 'u+' || operator === 'u-') {
+		return 3;
 	}
 
-	// If no operator exists, return the single number directly.
-	if (sym_arr.length === 0) {
-		return numbers[0];
+	if (operator === '*' || operator === '/') {
+		return 2;
 	}
 
-	// Step 1: resolve multiplication/division first.
-	var workingNumbers = numbers.slice();
-	var workingSymbols = sym_arr.slice();
-	var idx = 0;
+	return 1;
+}
 
-	while (idx < workingSymbols.length) {
-		var op = workingSymbols[idx];
+function isRightAssociativeOperator(operator) {
+	return operator === 'u+' || operator === 'u-';
+}
 
-		if (op === '*' || op === '/') {
-			var left = workingNumbers[idx];
-			var right = workingNumbers[idx + 1];
-			var value;
+function applyTopOperator(values, operators) {
+	if (operators.length === 0) {
+		throw new Error('Invalid expression');
+	}
 
-			if (op === '/') {
-				if (right === 0) {
-					throw new Error('Cannot divide by zero');
-				}
-				value = left / right;
-			} else {
-				value = left * right;
+	var op = operators.pop();
+
+	if (op === 'u+' || op === 'u-') {
+		if (values.length < 1) {
+			throw new Error('Invalid expression');
+		}
+
+		var unaryValue = values.pop();
+		var unaryAnswer = op === 'u-' ? -unaryValue : unaryValue;
+
+		if (!isFinite(unaryAnswer)) {
+			throw new Error('Math result is not finite');
+		}
+
+		values.push(unaryAnswer);
+		return;
+	}
+
+	if (values.length < 2) {
+		throw new Error('Invalid expression');
+	}
+
+	var right = values.pop();
+	var left = values.pop();
+	var answer;
+
+	if (op === '+') {
+		answer = left + right;
+	} else if (op === '-') {
+		answer = left - right;
+	} else if (op === '*') {
+		answer = left * right;
+	} else if (op === '/') {
+		if (right === 0) {
+			throw new Error('Cannot divide by zero');
+		}
+
+		answer = left / right;
+	} else {
+		throw new Error('Invalid expression');
+	}
+
+	if (!isFinite(answer)) {
+		throw new Error('Math result is not finite');
+	}
+
+	values.push(answer);
+}
+
+function evaluateTokens(tokens) {
+	var values = [];
+	var operators = [];
+	var expectValue = true;
+
+	for (var i = 0; i < tokens.length; i++) {
+		var token = tokens[i];
+
+		if (token.type === 'number') {
+			if (!expectValue) {
+				throw new Error('Invalid expression');
 			}
 
-			if (!isFinite(value)) {
-				throw new Error('Math result is not finite');
-			}
-
-			workingNumbers.splice(idx, 2, value);
-			workingSymbols.splice(idx, 1);
+			values.push(token.value);
+			expectValue = false;
 			continue;
 		}
 
-		idx++;
-	}
+		var symbol = token.value;
 
-	// Step 2: resolve remaining addition/subtraction from left to right.
-	var ans = workingNumbers[0];
-	for (var j = 0; j < workingSymbols.length; j++) {
-		if (workingSymbols[j] === '+') {
-			ans = ans + workingNumbers[j + 1];
-		} else if (workingSymbols[j] === '-') {
-			ans = ans - workingNumbers[j + 1];
+		if (symbol === '(') {
+			if (!expectValue) {
+				throw new Error('Invalid expression');
+			}
+
+			operators.push(symbol);
+			expectValue = true;
+			continue;
 		}
 
-		if (!isFinite(ans)) {
-			throw new Error('Math result is not finite');
+		if (symbol === ')') {
+			if (expectValue) {
+				throw new Error('Invalid expression');
+			}
+
+			while (operators.length > 0 && operators[operators.length - 1] !== '(') {
+				applyTopOperator(values, operators);
+			}
+
+			if (operators.length === 0) {
+				throw new Error('Invalid expression');
+			}
+
+			operators.pop();
+			expectValue = false;
+			continue;
 		}
+
+		var operator = symbol;
+		if (expectValue) {
+			if (!isUnarySymbol(operator)) {
+				throw new Error('Invalid expression');
+			}
+
+			operator = 'u' + operator;
+		}
+
+		while (operators.length > 0 && operators[operators.length - 1] !== '(') {
+			var topOperator = operators[operators.length - 1];
+			var topPrecedence = getOperatorPrecedence(topOperator);
+			var currentPrecedence = getOperatorPrecedence(operator);
+
+			if (topPrecedence > currentPrecedence || (topPrecedence === currentPrecedence && !isRightAssociativeOperator(operator))) {
+				applyTopOperator(values, operators);
+				continue;
+			}
+
+			break;
+		}
+
+		operators.push(operator);
+		expectValue = true;
 	}
 
-	return ans;
+	if (expectValue) {
+		throw new Error('Invalid expression');
+	}
+
+	while (operators.length > 0) {
+		if (operators[operators.length - 1] === '(') {
+			throw new Error('Invalid expression');
+		}
+
+		applyTopOperator(values, operators);
+	}
+
+	if (values.length !== 1) {
+		throw new Error('Invalid expression');
+	}
+
+	return values[0];
 }
 
 // Fix tiny floating-point noise for display only.
