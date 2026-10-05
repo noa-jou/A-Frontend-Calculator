@@ -4,9 +4,7 @@
 
 This project started as my personal frontend practice, long before I used AI tools.
 
-The old version in [old_version/HtmlPage1.html](old_version/HtmlPage1.html) was built with hard work and many trial-and-error attempts. It had a lot of mistakes, but it was my honest best effort and an important learning step.
-
-For detail: [Old_Version_Review](old_version/Old_Version_Review.md)
+The old version in `old_version/HtmlPage1.html` was built with hard work and many trial-and-error attempts. It had a lot of mistakes, but it was my honest best effort. For detail: [Old_Version_Review](old_version/Old_Version_Review.md)
 
 Now I look back, improve it, and try to give back by sharing a better version publicly for everyone who wants to use it or learn from it.
 
@@ -23,11 +21,11 @@ GitHub Pages can publish from a selected folder, and this repository is configur
 Reference:
 https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site
 
-Because of this setup, the public pages are as I mentioned before and it points to:
+Because of this setup, the [live site](https://noa-jou.github.io/A-Frontend-Calculator/) are as I mentioned before and it points to:
 
-- The New Calculator page: https://noa-jou.github.io/A-Frontend-Calculator/calculator.html
+- [The New Calculator page](https://noa-jou.github.io/A-Frontend-Calculator/calculator.html)
 
-- The Test dashboard: https://noa-jou.github.io/A-Frontend-Calculator/availability_and_math_correct_test.html
+- [The Test dashboard](https://noa-jou.github.io/A-Frontend-Calculator/availability_and_math_correct_test.html)
 
 
 ## What this new version offers
