@@ -30,17 +30,10 @@ https://noa-jou.github.io/A-Frontend-Calculator/
 
 I put the new version files in the [docs](docs) folder for GitHub Pages publishing.
 
-GitHub Pages can publish from a selected folder, and this repository is configured so files inside [docs](docs) are served on the live site.
-
-Reference:
+GitHub Pages can publish from a selected folder, and this repository is configured so files inside [docs](docs) are served on the live site.Reference:
 https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site
 
-Because of this setup, the [live site](https://noa-jou.github.io/A-Frontend-Calculator/) are as I mentioned before and it points to:
-
-- [The New Calculator page](https://noa-jou.github.io/A-Frontend-Calculator/calculator.html)
-
-- [The Test dashboard](https://noa-jou.github.io/A-Frontend-Calculator/availability_and_math_correct_test.html)
-
+Because of this setup, the [live site](https://noa-jou.github.io/A-Frontend-Calculator/) are as I mentioned before.
 
 
 ## What this new version offers
@@ -54,6 +47,7 @@ Because of this setup, the [live site](https://noa-jou.github.io/A-Frontend-Calc
 - Safer behavior for edge cases like divide-by-zero and malformed input
 - Cleaner display formatting for common floating-point noise (example: `0.30000000000000004` -> `0.3`)
 - A visual test dashboard with step-by-step categories (availability, math, accessibility, security, and fuzz/invariant checks)
+
 
 ## What this new version still limits
 
