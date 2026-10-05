@@ -18,7 +18,7 @@ Now I look back, improve it, and try to give back by sharing a better version pu
 <p align="center">
   <img src="images/new.png"
        width="200"
-       height="202"
+       height="159"
        alt="new_look">
 </p>
 
