@@ -1,30 +1,22 @@
 # Frontend Calculator (new_version)
 
-This folder contains a beginner-friendly vanilla JavaScript calculator and a visual test suite.
+This folder contains:
 
-## What is inside
+- `calculator.html`: the calculator app
+- `availability_and_math_correct_test.html`: the visual test dashboard
+- `app.js`: calculator logic (input, parsing, validation, evaluation)
+- `style.css`: UI styles
 
-- `calculator.html`  
-  The calculator app UI and interaction page.
-- `app.js`  
-  Calculator input handling, expression parsing, validation, and evaluation logic.
-- `style.css`  
-  Calculator styling.
-- `availability_and_math_correct_test.html`  
-  Interactive test dashboard that checks calculator behavior step by step.
+---
 
-## Quick start
+## Local run
 
-### Option 1: Open files directly
+### Open directly
 
-1. Open `calculator.html` in your browser to use the calculator.
-2. Open `availability_and_math_correct_test.html` in your browser to run and review tests.
+1. Open `calculator.html` in a browser.
+2. Open `availability_and_math_correct_test.html` in a browser.
 
-### Option 2: Serve locally (recommended)
-
-Using a local server avoids browser restrictions and matches real deployment behavior.
-
-If you have Python:
+### Local server (recommended)
 
 ```bash
 cd new_version
@@ -33,34 +25,70 @@ python3 -m http.server 8080
 
 Then open:
 
-- Calculator: `http://localhost:8080/calculator.html`
-- Test suite: `http://localhost:8080/availability_and_math_correct_test.html`
+- `http://localhost:8080/calculator.html`
+- `http://localhost:8080/availability_and_math_correct_test.html`
 
-## For GitHub / GitHub Pages
+---
 
-If this folder is published through GitHub Pages, readers can open:
+## GitHub Pages guide (aligned with official docs)
 
-- `calculator.html` to try the calculator
-- `availability_and_math_correct_test.html` to view and run the tests
+This section follows the GitHub Pages flow from:
+https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site
 
-Tip: include both links in your repository description or main project README so visitors can quickly find them.
+### 1. Repository requirements
 
-## Calculator features
+1. Push this project to GitHub.
+2. If your account is on GitHub Free, the repository should be public for Pages.
+3. If this is a user/organization site, the repo name must be `<user>.github.io`.
 
-- Number input (`0-9`) and decimal point
-- Operators: `+`, `-`, `*`, `/`
-- Parentheses support: `(` and `)`
-- Keyboard support: numbers/operators, `Enter`, `Backspace`, `Escape`, `C`
-- Validation and error handling for invalid expressions and divide-by-zero
+### 2. Pick your publishing source
 
-## Test suite highlights
+In **Settings -> Pages**, choose one:
 
-- Numbered, beginner-friendly test display
-- Category summaries (availability, math, decimal precision, input validation, keyboard, and more)
-- Expandable “why this test exists” explanations
-- Slow step-by-step run mode to make learning easier
+1. **Deploy from a branch** (simple for static files)
+2. **GitHub Actions** (if you want a custom workflow)
+
+### 3. Entry file rule (important)
+
+GitHub Pages looks for an entry file at the **top level of the publishing source**:
+
+- `index.html`, or
+- `index.md`, or
+- `README.md`
+
+If your source is a branch/folder, that entry file must be in that exact source folder.
+
+### 4. URL for this project structure
+
+If your publishing source includes this folder as `new_version`, your public links will be:
+
+- Calculator: `https://<user>.github.io/<repository>/new_version/calculator.html`
+- Test dashboard: `https://<user>.github.io/<repository>/new_version/availability_and_math_correct_test.html`
+
+After you save Pages settings, first deploy can take several minutes (often up to about 10 minutes).
+
+---
+
+## Suggested publish setup for this repo
+
+If you want to keep current structure and publish quickly:
+
+1. Keep files in `new_version/`
+2. In **Settings -> Pages**, choose branch source that contains this folder
+3. Share the two direct URLs above
+
+If you want cleaner URLs later (without `/new_version/`), move these files into the top level of the publishing source.
+
+---
+
+## Feature summary
+
+- Supports numbers, decimals, `+ - * /`, and parentheses
+- Keyboard support (`Enter`, `Backspace`, `Escape`, `C`)
+- Division-by-zero and invalid-expression handling
+- Slow, beginner-friendly visual test runner with explanations
 
 ## Notes
 
-- This project intentionally avoids `eval()` and uses a custom parser/evaluator in `app.js`.
-- Floating-point math in JavaScript can have tiny precision limits; display formatting reduces common noise.
+- The calculator uses a custom parser/evaluator (no `eval()`).
+- JavaScript floating-point limits still exist; display formatting reduces common noise.
