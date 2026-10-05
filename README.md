@@ -23,7 +23,7 @@ Now I look back, improve it, and try to give back by sharing a better version pu
 </p>
 
 Live site:
-https://noa-jou.github.io/A-Frontend-Calculator/
+https://noa-jou.github.io/Frontend-Calculator/
 
 
 ## Why the new version is in docs
@@ -33,7 +33,7 @@ I put the new version files in the [docs](docs) folder for GitHub Pages publishi
 GitHub Pages can publish from a selected folder, and this repository is configured so files inside [docs](docs) are served on the live site.Reference:
 https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site
 
-Because of this setup, the [live site](https://noa-jou.github.io/A-Frontend-Calculator/) are as I mentioned before.
+Because of this setup, the [live site](https://noa-jou.github.io/Frontend-Calculator/) are as I mentioned before.
 
 
 ## What this new version offers
