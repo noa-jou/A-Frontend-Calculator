@@ -1,9 +1,7 @@
-# A Frontend Calculator
+# A Boring Frontend Calculator
 
-1. Use the calculator:
-	https://noa-jou.github.io/A-Frontend-Calculator/new_version/calculator.html
-2. Run the test dashboard:
-	https://noa-jou.github.io/A-Frontend-Calculator/new_version/availability_and_math_correct_test.html
+1. [Use it](https://noa-jou.github.io/A-Frontend-Calculator/new_version/calculator.html)
+2. [Run the test of it](https://noa-jou.github.io/A-Frontend-Calculator/new_version/availability_and_math_correct_test.html)
 
 ## What you will get
 
