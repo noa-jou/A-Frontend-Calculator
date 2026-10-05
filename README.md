@@ -6,27 +6,63 @@ This project started as my personal frontend practice, long before I used AI too
 
 The old version in [old_version/HtmlPage1.html](old_version/HtmlPage1.html) was built with hard work and many trial-and-error attempts. It had a lot of mistakes that I did not understand at that time, but it was my honest best effort and an important learning step.
 
-For detail: [Old_Version_Review](./old_version/Old_Version_Review.md)
+For detail: [Old_Version_Review](old_version/Old_Version_Review.md)
 
 Now I look back, improve it, and try to give back by sharing a better version publicly for everyone who wants to use it or learn from it.
 
 Live site:
 https://noa-jou.github.io/A-Frontend-Calculator/
 
+Repository:
+https://github.com/noa-jou/A-Frontend-Calculator
+
+## Why the new version is in docs
+
+I put the new version files in the [docs](docs) folder for GitHub Pages publishing.
+
+GitHub Pages can publish from a selected folder, and this repository is configured so files inside [docs](docs) are served on the live site.
+
+Reference:
+https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site
+
+Because of this setup, the public pages are:
+
+Live site:
+https://noa-jou.github.io/A-Frontend-Calculator/
+
+Which points to:
+
+- Calculator page: https://noa-jou.github.io/A-Frontend-Calculator/calculator.html
+
+- Test dashboard: https://noa-jou.github.io/A-Frontend-Calculator/availability_and_math_correct_test.html
+
+
 ## What this new version offers
 
-- Still Built with basic HTML, CSS, and JavaScript (no framework)
+- Still built with basic HTML, CSS, and JavaScript (no framework)
 - Cleaner calculation logic with correct operator precedence
 - Parentheses support for more realistic expressions
 - Better input validation and clearer error handling
 - Keyboard support (Enter, Backspace, Escape, C)
 - A visual test dashboard to check correctness step by step
 
-Calculator page:
-https://noa-jou.github.io/A-Frontend-Calculator/new_version/calculator.html
+## Run on your own computer (for your own modification)
 
-Test dashboard:
-https://noa-jou.github.io/A-Frontend-Calculator/new_version/availability_and_math_correct_test.html
+1. Clone this repository.
+2. Open a terminal in the project root.
+3. Run:
+
+```bash
+cd docs
+python3 -m http.server 8080
+```
+
+4. Open in your browser:
+
+- http://localhost:8080/calculator.html
+- http://localhost:8080/availability_and_math_correct_test.html
+
+5. Edit files in [docs](docs), refresh the browser, and test your own changes.
 
 ## Why I share this
 
