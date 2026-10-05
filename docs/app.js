@@ -5,7 +5,8 @@
 function inputText(val) {
 	var ele = document.getElementById('input');
 	var ori = ele.textContent || '';
-	ele.textContent = ori + val;
+	var displayVal = val === '*' ? 'x' : val;
+	ele.textContent = ori + displayVal;
 }
 
 function clearText() {
@@ -58,8 +59,15 @@ function handleCalculatorKeydown(event) {
 		return;
 	}
 
-	// Operator keys.
-	if (key === '+' || key === '-' || key === '*' || key === '/' || key === '.' || key === '(' || key === ')') {
+	// Multiplication key: accept * or x, always display x.
+	if (key === '*' || key === 'x' || key === 'X') {
+		inputText('x');
+		event.preventDefault();
+		return;
+	}
+
+	// Other operator keys.
+	if (key === '+' || key === '-' || key === '/' || key === '.' || key === '(' || key === ')') {
 		inputText(key);
 		event.preventDefault();
 		return;
@@ -100,12 +108,16 @@ initKeyboardControls();
 // Validation helpers
 // -------------------------------
 
+function normalizeExpressionSymbols(expression) {
+	return String(expression || '').replace(/[xX×]/g, '*');
+}
+
 function verify(ori) {
 	if (!ori || !ori.trim()) {
 		return false;
 	}
 
-	var compact = ori.replace(/\s+/g, '');
+	var compact = normalizeExpressionSymbols(ori).replace(/\s+/g, '');
 	if (!compact) {
 		return false;
 	}
@@ -151,7 +163,7 @@ function continuousSymbol(ori) {
 }
 
 function getPureNumAry(ori) {
-	var compact = String(ori || '').replace(/\s+/g, '');
+	var compact = normalizeExpressionSymbols(ori).replace(/\s+/g, '');
 	if (!compact) {
 		return [];
 	}
@@ -323,7 +335,7 @@ function validateTokens(tokens) {
 
 // Extract numbers for compatibility with existing helper API.
 function getNumAry(ori) {
-	var compact = String(ori || '').replace(/\s+/g, '');
+	var compact = normalizeExpressionSymbols(ori).replace(/\s+/g, '');
 	if (!compact) {
 		return [];
 	}
@@ -346,7 +358,7 @@ function getNumAry(ori) {
 
 // Extract binary operators only (+ - * /) for compatibility.
 function getSymAry(ori) {
-	var compact = String(ori || '').replace(/\s+/g, '');
+	var compact = normalizeExpressionSymbols(ori).replace(/\s+/g, '');
 	if (!compact) {
 		return [];
 	}
@@ -376,7 +388,7 @@ function evaluateExpression(expression) {
 		throw new Error('Invalid expression');
 	}
 
-	var compact = expression.replace(/\s+/g, '');
+	var compact = normalizeExpressionSymbols(expression).replace(/\s+/g, '');
 	var tokens = tokenizeExpression(compact);
 	validateTokens(tokens);
 

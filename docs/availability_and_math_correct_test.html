@@ -339,10 +339,19 @@
             return { win: win, doc: doc };
         }
 
+        function normalizeButtonLabel(label) {
+            if (label === '*' || label === 'x' || label === 'X' || label === '×') {
+                return '*';
+            }
+            return String(label || '').trim();
+        }
+
         function findButton(doc, label) {
+            var wanted = normalizeButtonLabel(label);
             var buttons = doc.querySelectorAll('button');
             for (var i = 0; i < buttons.length; i++) {
-                if ((buttons[i].textContent || '').trim() === label) return buttons[i];
+                var actual = normalizeButtonLabel((buttons[i].textContent || '').trim());
+                if (actual === wanted) return buttons[i];
             }
             return null;
         }
