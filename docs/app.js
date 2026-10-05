@@ -104,6 +104,38 @@ function initKeyboardControls() {
 
 initKeyboardControls();
 
+// Keep calculator layout responsive to manual-test panel collapsed/open state.
+function syncManualTestsPanelLayout() {
+	var page = document.querySelector('.calculator-page');
+	var panel = document.querySelector('.manual-tests');
+
+	if (!page || !panel) {
+		return;
+	}
+
+	if (panel.open) {
+		page.classList.remove('manual-tests-collapsed');
+	} else {
+		page.classList.add('manual-tests-collapsed');
+	}
+}
+
+function initManualTestsPanelLayout() {
+	if (typeof document === 'undefined' || !document.querySelector) {
+		return;
+	}
+
+	var panel = document.querySelector('.manual-tests');
+	if (!panel || !panel.addEventListener) {
+		return;
+	}
+
+	syncManualTestsPanelLayout();
+	panel.addEventListener('toggle', syncManualTestsPanelLayout);
+}
+
+initManualTestsPanelLayout();
+
 // -------------------------------
 // Validation helpers
 // -------------------------------
