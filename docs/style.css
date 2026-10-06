@@ -1,15 +1,48 @@
+/*
+ Beginner guide for this stylesheet:
+ - Define reusable theme colors in :root.
+ - Build the page layout using CSS Grid.
+ - Style calculator parts (screen, keys, manual panel).
+ - Add interactive states (hover/focus/active).
+ - Adapt layout for smaller screens with media queries.
+
+ Cooperation with app.js (important beginner concept):
+ - app.js writes live expression/result text into #input.
+ - app.js adds/removes "manual-tests-collapsed" on .calculator-page.
+ - This stylesheet reacts to that class to switch normal/collapsed layouts.
+ - In collapsed desktop mode, this stylesheet turns summary text vertical.
+*/
+
+/*
+ Global theme variables.
+ You can reuse these with var(--name) instead of repeating color values.
+*/
 :root {
+	/* Page background tone */
 	--bg: #f6f8fc;
+	/* Main text color */
 	--ink: #1b2a3a;
+	/* Border and divider color */
 	--line: #ccd7e7;
+	/* Card/panel surface color */
 	--panel: #ffffff;
+	/* Secondary text color */
 	--muted: #4e5f73;
 }
 
+/*
+ Apply border-box sizing everywhere.
+ Width/height now include padding and border, which is easier for layout math.
+*/
 * {
 	box-sizing: border-box;
 }
 
+/*
+ Page shell:
+ - Center everything on screen.
+ - Paint soft decorative gradients behind the calculator.
+*/
 body {
 	margin: 0;
 	font-family: "Segoe UI", "Trebuchet MS", Verdana, sans-serif;
@@ -24,6 +57,11 @@ body {
 	padding: 18px;
 }
 
+/*
+ Main two-column layout:
+ - Left: calculator
+ - Right: manual tests panel
+*/
 .calculator-page {
 	width: min(980px, 100%);
 	display: grid;
@@ -32,12 +70,18 @@ body {
 	align-items: start;
 }
 
+/*
+ Alternate layout when manual test panel is collapsed.
+ The second column shrinks to a slim vertical tab.
+ app.js syncManualTestsPanelLayout() controls when this class appears.
+*/
 .calculator-page.manual-tests-collapsed {
 	grid-template-columns: minmax(320px, 430px) 58px;
 	gap: 10px;
 	justify-content: center;
 }
 
+/* Outer card around the calculator table */
 .calculator-wrapper {
 	background: var(--panel);
 	border: 1px solid var(--line);
@@ -46,6 +90,7 @@ body {
 	padding: 14px;
 }
 
+/* Calculator key grid container */
 table {
 	width: 100%;
 	border: 1px solid #9fb0c6;
@@ -54,6 +99,7 @@ table {
 	background: #f7fbff;
 }
 
+/* Each calculator cell (one button slot) */
 td {
 	padding: 5px;
 	text-align: center;
@@ -62,6 +108,7 @@ td {
 	height: 52px;
 }
 
+/* Display area frame */
 .screen {
 	border: 1px solid #a8b8cc;
 	border-radius: 8px;
@@ -70,6 +117,11 @@ td {
 	height: 66px;
 }
 
+/*
+ The expression text on the calculator display.
+ word-break lets long expressions wrap instead of overflowing.
+ app.js inputText(), clearText(), deleteLastChar(), and calculate() all write here.
+*/
 #input {
 	display: block;
 	min-height: 100%;
@@ -79,6 +131,7 @@ td {
 	word-break: break-all;
 }
 
+/* Base button style shared by all keys */
 button {
 	background-color: #b7e4ff;
 	font-size: 1.1rem;
@@ -92,15 +145,25 @@ button {
 	transition: transform 0.1s ease, filter 0.15s ease;
 }
 
+/*
+ Visual feedback:
+ - hover/focus-visible: slight brightness change
+ - focus-visible helps keyboard users see where focus is
+*/
 button:hover,
 button:focus-visible {
 	filter: brightness(0.97);
 }
 
+/* Pressed state for a tactile button feel */
 button:active {
 	transform: translateY(1px);
 }
 
+/*
+ Group styles for operator-like keys.
+ These class names come from calculator.html button classes.
+*/
 .btn-operator,
 .btn-multiply,
 .btn-divide,
@@ -112,21 +175,25 @@ button:active {
 	border-color: #9bd49b;
 }
 
+/* Control keys like C / backspace */
 .btn-control {
 	background-color: #f7b8d9;
 	color: #5c1938;
 	border-color: #e79bc4;
 }
 
+/* Right-side panel wrapper */
 .manual-tests-panel {
 	align-self: stretch;
 	display: flex;
 }
 
+/* Let details panel fill available width */
 .manual-tests-panel .manual-tests {
 	width: 100%;
 }
 
+/* Manual test details card */
 .manual-tests {
 	margin: 0;
 	background: #fffdf8;
@@ -136,6 +203,11 @@ button:active {
 	padding: 12px 14px;
 }
 
+/*
+ The clickable title line of the <details> panel.
+ When this summary toggles the details open/closed, app.js listens to that
+ "toggle" event and updates .calculator-page class names.
+*/
 .manual-tests > summary {
 	cursor: pointer;
 	font-weight: 800;
@@ -144,16 +216,23 @@ button:active {
 	list-style-position: inside;
 }
 
+/*
+ Add spacing only when panel is open.
+ "open" is a built-in <details> state managed by the browser.
+ app.js reads the same state to decide collapsed vs normal layout class.
+*/
 .manual-tests[open] > summary {
 	margin-bottom: 10px;
 }
 
+/* Paragraph text inside the manual panel */
 .manual-tests p {
 	margin: 0 0 10px;
 	color: var(--muted);
 	line-height: 1.45;
 }
 
+/* Bullet list styles inside the manual panel */
 .manual-tests ul {
 	margin: 0;
 	padding-left: 20px;
@@ -161,10 +240,12 @@ button:active {
 	line-height: 1.45;
 }
 
+/* Add vertical spacing between list items, except before the first one */
 .manual-tests li + li {
 	margin-top: 7px;
 }
 
+/* Inline code sample style (for keyboard shortcuts/math examples) */
 .manual-tests code {
 	background: #f2f4f7;
 	border: 1px solid #e4e7ec;
@@ -175,10 +256,15 @@ button:active {
 	font-size: 0.95em;
 }
 
+/*
+ Collapsed mode: keep the panel as a slim side strip.
+ This block activates only when app.js adds .manual-tests-collapsed.
+*/
 .calculator-page.manual-tests-collapsed .manual-tests-panel {
 	width: 58px;
 }
 
+/* Center summary text when collapsed */
 .calculator-page.manual-tests-collapsed .manual-tests {
 	padding: 10px 6px;
 	min-height: 250px;
@@ -187,6 +273,11 @@ button:active {
 	justify-content: center;
 }
 
+/*
+ Vertical summary label in collapsed desktop mode.
+ - writing-mode makes text flow vertically
+ - rotate(180deg) flips the direction for this right-side panel position
+*/
 .calculator-page.manual-tests-collapsed .manual-tests > summary {
 	margin: 0;
 	list-style: none;
@@ -196,10 +287,17 @@ button:active {
 	line-height: 1.1;
 }
 
+/* Hide default marker for cleaner vertical label */
 .calculator-page.manual-tests-collapsed .manual-tests > summary::-webkit-details-marker {
 	display: none;
 }
 
+/*
+ Tablet/small laptop behavior:
+ stack calculator and manual panel into one column.
+ Even if app.js keeps .manual-tests-collapsed, these rules neutralize
+ the vertical-label desktop treatment for easier small-screen reading.
+*/
 @media (max-width: 860px) {
 	.calculator-page {
 		grid-template-columns: 1fr;
@@ -234,6 +332,10 @@ button:active {
 	}
 }
 
+/*
+ Phone behavior:
+ reduce padding and key/display sizes for small screens.
+*/
 @media (max-width: 520px) {
 	body {
 		padding: 12px;

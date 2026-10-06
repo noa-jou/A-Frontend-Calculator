@@ -1,0 +1,377 @@
+/* -----------------------------------------------------------------------------
+    Beginner map for this stylesheet:
+    1) Design tokens (colors) in :root
+    2) Page layout and panel shells
+    3) Controls + mode guide styles
+    4) Test result cards and status colors
+    5) Responsive tweaks for small and wide screens
+----------------------------------------------------------------------------- */
+
+/* Design tokens: define reusable colors once, then reference with var(--name). */
+:root {
+    color-scheme: light;
+    --bg: #f5f7fb;
+    --panel: #ffffff;
+    --ink: #1f2937;
+    --muted: #5b6578;
+    --ok: #15803d;
+    --bad: #b91c1c;
+    --accent: #0f766e;
+    --line: #d9deea;
+}
+
+/* Border-box makes width/height include padding and border (easier sizing math). */
+* {
+    box-sizing: border-box;
+}
+
+/* Page-level look: remove default margin, set font, and paint layered soft background shapes. */
+body {
+    margin: 0;
+    font-family: "Segoe UI", "Trebuchet MS", Verdana, sans-serif;
+    color: var(--ink);
+    background:
+        radial-gradient(circle at 20% 10%, #dbeafe 0%, transparent 35%),
+        radial-gradient(circle at 80% 0%, #ccfbf1 0%, transparent 30%),
+        var(--bg);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* Main content wrapper: one-column grid centered on the page. */
+.layout {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+/* Reusable card shell used for each major panel. */
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 10px 26px rgba(16, 24, 40, 0.08);
+    overflow: hidden;
+}
+
+/* Panel heading row uses flex so title and actions align neatly and can wrap on small screens. */
+.panel-head {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+/* clamp(min, preferred, max) keeps heading size responsive without media queries. */
+h1 {
+    margin: 0;
+    font-size: clamp(1rem, 2.1vw, 1.3rem);
+    letter-spacing: 0.2px;
+}
+
+h2 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.head-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Form control styling for the mode dropdown. */
+.mode-select {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #ffffff;
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+/* Shared button style (used by the run button). */
+button {
+    border: 0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-weight: 600;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+}
+
+/* Disabled state gives visual feedback that interaction is temporarily blocked. */
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.status {
+    font-size: 0.92rem;
+    color: var(--muted);
+    min-height: 20px;
+}
+
+/* Generic spacing container used inside each panel body. */
+.content {
+    padding: 16px;
+    display: grid;
+    gap: 14px;
+}
+
+/* Mode guide block (the explainer section above tests). */
+.mode-guide {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #f7fbff;
+    padding: 12px;
+}
+
+.mode-guide-details {
+    display: grid;
+    gap: 8px;
+}
+
+.mode-guide-summary {
+    cursor: pointer;
+    font-size: 0.94rem;
+    font-weight: 700;
+    color: #0f4c5c;
+}
+
+/* Compare list uses grid + small gap for clean vertical rhythm. */
+.mode-compare-list {
+    margin: 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 4px;
+    color: var(--ink);
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+.mode-compare-list strong {
+    color: #0f4c5c;
+}
+
+.mode-guide-title {
+    margin: 0;
+    font-size: 0.96rem;
+    font-weight: 700;
+    color: #0f4c5c;
+}
+
+.mode-guide-copy {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+    line-height: 1.45;
+}
+
+.mode-guide-subtitle {
+    margin: 6px 0 0;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.mode-guide-list {
+    margin: 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 4px;
+    color: var(--ink);
+    font-size: 0.9rem;
+}
+
+.mode-guide-tip {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.45;
+}
+
+/* Keep the iframe invisible: it is only used as a test target, not as visible UI. */
+iframe {
+    display: none;
+}
+
+/* Result list and history use grid for simple stacked spacing between cards. */
+.result-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+}
+
+.reports-history {
+    display: grid;
+    gap: 12px;
+}
+
+/* Run report card wraps one full test run (summary + details). */
+.run-report {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #f9fbff;
+    padding: 8px 10px;
+}
+
+.run-report summary {
+    cursor: pointer;
+    color: #0f4c5c;
+    font-weight: 700;
+    font-size: 0.94rem;
+}
+
+.run-report-meta {
+    margin: 8px 0 10px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    line-height: 1.4;
+}
+
+/* Individual test result card. */
+.result-item {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fcfeff;
+    padding: 12px;
+}
+
+/* Top row inside a result card: title block on left, pass/fail badge on right. */
+.result-top {
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.result-title {
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 700;
+}
+
+.result-category {
+    margin: 4px 0 0;
+    font-size: 0.87rem;
+    color: var(--muted);
+}
+
+.result-badge {
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    border: 1px solid transparent;
+}
+
+/* Semantic state colors: green for pass, red for fail. */
+.result-badge-pass {
+    color: var(--ok);
+    background: #ecfdf3;
+    border-color: #bbf7d0;
+}
+
+.result-badge-fail {
+    color: var(--bad);
+    background: #fff1f2;
+    border-color: #fecdd3;
+}
+
+.result-details {
+    margin: 8px 0 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+/* Extra explain area shown in each result card. */
+.result-explain {
+    margin-top: 10px;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: #f7fbff;
+}
+
+.result-explain summary {
+    cursor: pointer;
+    color: #0f4c5c;
+    font-weight: 700;
+}
+
+.result-explain p {
+    margin: 8px 0 0;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+.legend {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+/* Utility text colors used in summary labels. */
+.pass {
+    color: var(--ok);
+    font-weight: 700;
+}
+
+.fail {
+    color: var(--bad);
+    font-weight: 700;
+}
+
+.summary {
+    font-weight: 700;
+}
+
+.category-summary {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+.small {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+/* Mobile-first adjustment: reduce spacing/text size for narrow screens. */
+@media (max-width: 700px) {
+    body {
+        padding: 12px;
+    }
+
+    .result-item {
+        padding: 10px;
+    }
+
+    .result-title {
+        font-size: 0.94rem;
+    }
+}
+
+/* Wide-screen enhancement: split mode guide list into two columns for easier scanning. */
+@media (min-width: 900px) {
+    .mode-guide-list {
+        columns: 2;
+        column-gap: 18px;
+    }
+}

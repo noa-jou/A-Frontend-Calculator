@@ -1,8 +1,26 @@
+// Frontend Calculator Roadmap
+// 1) UI layer: reads/writes the display text in #input.
+// 2) Event layer: keyboard + panel events call UI and calculate().
+// 3) Validation/parsing layer: converts raw text into checked math pieces.
+// 4) Engine layer: evaluates math pieces using value/operator stacks.
+// 5) Presentation layer: formats floating-point output for display.
+//
+// Dependency direction (top-level idea):
+// UI/Event -> Validation/Parsing -> Engine -> Result Formatting
+//
+// How this file cooperates with style.css:
+// - This file writes text into #input (style.css controls how #input looks/wraps).
+// - This file toggles class "manual-tests-collapsed" on .calculator-page.
+// - style.css reacts to that class to change panel width and make the title vertical.
+// - On small screens, style.css media queries turn that title back to horizontal.
+
 // -------------------------------
-// Basic input/display helpers
+// 1) UI display helpers
 // -------------------------------
 
 function inputText(val) {
+	// The user may type "*", but we display "x" to look like a calculator key.
+	// style.css #input rule controls right alignment, font size, and line wrapping.
 	var ele = document.getElementById('input');
 	var ori = ele.textContent || '';
 	var displayVal = val === '*' ? 'x' : val;
@@ -10,6 +28,8 @@ function inputText(val) {
 }
 
 function clearText() {
+	// Reset current expression shown on screen.
+	// Visual effect is immediate because #input is a live DOM element on calculator.html.
 	var ele = document.getElementById('input');
 	ele.textContent = '';
 }
@@ -40,8 +60,13 @@ function shouldIgnoreKeyboardEvent(event) {
 	return false;
 }
 
+// -------------------------------
+// 2) Event wiring helpers
+// -------------------------------
+
 // Map keyboard keys to the same behavior as clicking calculator buttons.
 function handleCalculatorKeydown(event) {
+	// Respect browser/system shortcuts like Ctrl+C, Cmd+V, Alt+...
 	if (event.ctrlKey || event.metaKey || event.altKey) {
 		return;
 	}
@@ -95,16 +120,17 @@ function handleCalculatorKeydown(event) {
 }
 
 function initKeyboardControls() {
+	// Defensive checks keep this safe in non-browser environments.
 	if (typeof document === 'undefined' || !document.addEventListener) {
 		return;
 	}
 
+	// Keyboard events call UI helpers above, then CSS paints the updated text style.
 	document.addEventListener('keydown', handleCalculatorKeydown);
 }
 
-initKeyboardControls();
-
 // Keep calculator layout responsive to manual-test panel collapsed/open state.
+// This is the key JS <-> CSS bridge for collapsed layout behavior.
 function syncManualTestsPanelLayout() {
 	var page = document.querySelector('.calculator-page');
 	var panel = document.querySelector('.manual-tests');
@@ -114,13 +140,17 @@ function syncManualTestsPanelLayout() {
 	}
 
 	if (panel.open) {
+		// "open" means details panel expanded, so use normal two-column CSS layout.
 		page.classList.remove('manual-tests-collapsed');
 	} else {
+		// Closed details -> add collapsed class that style.css uses for vertical summary mode.
 		page.classList.add('manual-tests-collapsed');
 	}
 }
 
 function initManualTestsPanelLayout() {
+	// The test panel exists on calculator.html and emits native "toggle" when
+	// users open/close <details>. We listen and then update CSS-driving class names.
 	if (typeof document === 'undefined' || !document.querySelector) {
 		return;
 	}
@@ -130,26 +160,33 @@ function initManualTestsPanelLayout() {
 		return;
 	}
 
+	// Initialize once so first paint already matches open/closed panel state.
 	syncManualTestsPanelLayout();
+	// Re-sync every time summary is clicked.
 	panel.addEventListener('toggle', syncManualTestsPanelLayout);
 }
 
-initManualTestsPanelLayout();
-
 // -------------------------------
-// Validation helpers
+// 3) Validation and normalization helpers
 // -------------------------------
 
 function normalizeExpressionSymbols(expression) {
+	// Accept user-facing multiply symbols and convert them to engine-friendly "*".
 	return String(expression || '').replace(/[xX×]/g, '*');
 }
 
+function compactExpression(expression) {
+	// Remove spaces so parser/evaluator logic can reason about one compact stream.
+	return normalizeExpressionSymbols(expression).replace(/\s+/g, '');
+}
+
 function verify(ori) {
-	if (!ori || !ori.trim()) {
+	var rawExpression = String(ori || '');
+	if (!rawExpression.trim()) {
 		return false;
 	}
 
-	var compact = normalizeExpressionSymbols(ori).replace(/\s+/g, '');
+	var compact = compactExpression(rawExpression);
 	if (!compact) {
 		return false;
 	}
@@ -194,8 +231,9 @@ function continuousSymbol(ori) {
 	return re.test(ori);
 }
 
-function getPureNumAry(ori) {
-	var compact = normalizeExpressionSymbols(ori).replace(/\s+/g, '');
+// Shared extractor used by compatibility helpers below.
+function extractRawNumberTokens(ori) {
+	var compact = compactExpression(ori);
 	if (!compact) {
 		return [];
 	}
@@ -216,7 +254,12 @@ function getPureNumAry(ori) {
 	}
 }
 
+function getPureNumAry(ori) {
+	return extractRawNumberTokens(ori);
+}
+
 function allNum(num_arr) {
+	// A basic helper kept for backward compatibility with older test code.
 	for (var i = 0; i < num_arr.length; i++) {
 		if (num_arr[i] === '' || isNaN(num_arr[i])) {
 			return false;
@@ -226,14 +269,15 @@ function allNum(num_arr) {
 }
 
 // -------------------------------
-// Expression parsing helpers
+// 4) Split expression into math pieces + grammar validation
 // -------------------------------
 
 function isDigitChar(ch) {
 	return ch >= '0' && ch <= '9';
 }
 
-// Tokenize into numbers and symbols: + - * / ( )
+// Splitter: scan left-to-right and build a list of math pieces (numbers/symbols).
+// Example "12.5*(3-1)" -> [12.5, *, (, 3, -, 1, )]
 function tokenizeExpression(expression) {
 	var tokens = [];
 	var i = 0;
@@ -242,6 +286,7 @@ function tokenizeExpression(expression) {
 		var ch = expression[i];
 
 		if (isDigitChar(ch) || ch === '.') {
+			// Parse one full number piece (can include one decimal dot).
 			var numberText = '';
 			var hasDigit = false;
 			var hasDot = false;
@@ -288,6 +333,7 @@ function tokenizeExpression(expression) {
 			continue;
 		}
 
+		// Parse one symbol piece.
 		if (ch === '+' || ch === '-' || ch === '*' || ch === '/' || ch === '(' || ch === ')') {
 			tokens.push({
 				type: 'symbol',
@@ -308,6 +354,10 @@ function isUnarySymbol(symbol) {
 }
 
 function validateTokens(tokens) {
+	// In this function, the list variables represent math pieces.
+	// Grammar state machine:
+	// expectValue = true means next legal pieces are: number, "(", unary + or unary -.
+	// expectValue = false means next legal pieces are: binary operator or ")".
 	if (!tokens || tokens.length === 0) {
 		throw new Error('Invalid expression');
 	}
@@ -367,30 +417,12 @@ function validateTokens(tokens) {
 
 // Extract numbers for compatibility with existing helper API.
 function getNumAry(ori) {
-	var compact = normalizeExpressionSymbols(ori).replace(/\s+/g, '');
-	if (!compact) {
-		return [];
-	}
-
-	try {
-		var tokens = tokenizeExpression(compact);
-		var ary = [];
-
-		for (var i = 0; i < tokens.length; i++) {
-			if (tokens[i].type === 'number') {
-				ary.push(tokens[i].raw);
-			}
-		}
-
-		return ary;
-	} catch (error) {
-		return [];
-	}
+	return extractRawNumberTokens(ori);
 }
 
 // Extract binary operators only (+ - * /) for compatibility.
 function getSymAry(ori) {
-	var compact = normalizeExpressionSymbols(ori).replace(/\s+/g, '');
+	var compact = compactExpression(ori);
 	if (!compact) {
 		return [];
 	}
@@ -412,15 +444,16 @@ function getSymAry(ori) {
 }
 
 // -------------------------------
-// Core calculator engine
+// 5) Core calculator engine
 // -------------------------------
 
 function evaluateExpression(expression) {
+	// Full pipeline: quick verify -> split into pieces -> validate grammar -> evaluate math.
 	if (!verify(expression)) {
 		throw new Error('Invalid expression');
 	}
 
-	var compact = normalizeExpressionSymbols(expression).replace(/\s+/g, '');
+	var compact = compactExpression(expression);
 	var tokens = tokenizeExpression(compact);
 	validateTokens(tokens);
 
@@ -428,6 +461,7 @@ function evaluateExpression(expression) {
 }
 
 function getOperatorPrecedence(operator) {
+	// Unary signs should execute before * and /.
 	if (operator === 'u+' || operator === 'u-') {
 		return 3;
 	}
@@ -440,9 +474,11 @@ function getOperatorPrecedence(operator) {
 }
 
 function isRightAssociativeOperator(operator) {
+	// Unary operators associate right-to-left. Example: --5 means -( -5 ).
 	return operator === 'u+' || operator === 'u-';
 }
 
+// Apply one operator from the operator stack to values in the value stack.
 function applyTopOperator(values, operators) {
 	if (operators.length === 0) {
 		throw new Error('Invalid expression');
@@ -498,6 +534,9 @@ function applyTopOperator(values, operators) {
 }
 
 function evaluateTokens(tokens) {
+	// This uses two stacks (a common expression-evaluation pattern):
+	// - values: numbers
+	// - operators: +, -, *, /, unary signs, and parentheses
 	var values = [];
 	var operators = [];
 	var expectValue = true;
@@ -510,6 +549,7 @@ function evaluateTokens(tokens) {
 				throw new Error('Invalid expression');
 			}
 
+			// Numbers go directly to the values stack.
 			values.push(token.value);
 			expectValue = false;
 			continue;
@@ -554,6 +594,7 @@ function evaluateTokens(tokens) {
 			operator = 'u' + operator;
 		}
 
+		// Before pushing current operator, resolve stronger/equal-priority operators first.
 		while (operators.length > 0 && operators[operators.length - 1] !== '(') {
 			var topOperator = operators[operators.length - 1];
 			var topPrecedence = getOperatorPrecedence(topOperator);
@@ -590,6 +631,10 @@ function evaluateTokens(tokens) {
 	return values[0];
 }
 
+// -------------------------------
+// 6) Result formatting helpers
+// -------------------------------
+
 // Fix tiny floating-point noise for display only.
 function normalizeFloatingError(value) {
 	var nearestInt = Math.round(value);
@@ -606,10 +651,12 @@ function formatResult(value) {
 }
 
 // -------------------------------
-// Main action for "=" button
+// 7) Main action used by "=" button and Enter key
 // -------------------------------
 
 function calculate() {
+	// UI -> Engine -> Formatter, then write back to UI.
+	// style.css #input styles make the resulting number readable on the screen.
 	var ele = document.getElementById('input');
 	var expression = ele.textContent || '';
 
@@ -624,3 +671,17 @@ function calculate() {
 		}
 	}
 }
+
+// -------------------------------
+// 8) App bootstrap (runs once at file load)
+// -------------------------------
+
+function bootstrapCalculator() {
+	// Startup order:
+	// 1) keyboard wiring for calculator interaction
+	// 2) panel-layout wiring so CSS classes reflect <details> state
+	initKeyboardControls();
+	initManualTestsPanelLayout();
+}
+
+bootstrapCalculator();
